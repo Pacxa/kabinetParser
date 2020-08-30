@@ -1,4 +1,0 @@
-shopcode t-date  t-time  t-id    barname local   barcode salesitem   salesvalue  price   discount    t-type
-703    26.08.2020    09:55:55 3.2   GAG 0   null  1.0    0.0812   2.5    0    B
-703    26.08.2020    09:55:55 3.2   АннулированиеТест 0   null  1.0    0.0812   10.0    0    B
-703    26.08.2020    09:49:46 3.1   Чипсы 0   2401837570134  1.0    0.035   10.0    350    NB

@@ -1,22 +1,12 @@
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.*;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
 
 import java.io.*;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -24,28 +14,34 @@ import java.util.Locale;
  */
 public class Kabinet {
     private Main main;
-    String from="";
-    String to="";
-    String offset="";
-    String limit="";
-    String devices;
+    String http = "";
 
 
     private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
-    public void sendGet() throws Exception{
-        from = "2020-08-26T00:00:00.000Z";
-        to = "2020-08-26T23:59:59.999Z";
-        offset = "";
-        limit = "1000";
-        devices = "";
-        HttpGet request = new HttpGet("https://kabinet.dreamkas.by/api/receipts?from="+from+"&to="+to+"&offset="+offset+"&limit="+limit+"&devices="+devices);
-        //HttpGet request = new HttpGet("https://kabinet.dreamkas.by/api/receipts?from="+from);
+    public void sendGet(String client) throws Exception{
+        http = "";
+        if(!main.from.isEmpty() & http.isEmpty()) {
+            http += "?from="+main.from;
+        }else if(!main.from.isEmpty()) http += "&from="+main.from;;
+        if(!main.to.isEmpty() & http.isEmpty()) {
+            http += "?to="+main.to;
+        }else if(!main.to.isEmpty()) http += "&to="+main.to;
+        if(!main.offset.isEmpty() & http.isEmpty()) {
+            http += "?offset="+main.offset;
+        }else if(!main.offset.isEmpty()) http += "&offset="+main.offset;
+        if(!main.limit.isEmpty() & http.isEmpty()) {
+            http += "?limit="+main.limit;
+        }else if(!main.limit.isEmpty())  http += "&limit="+main.limit;
+        if(!main.devices.isEmpty() & http.isEmpty()) {
+            http += "?devices="+main.devices;
+        }else if(!main.devices.isEmpty()) http += "&devices="+main.devices;
 
+        HttpGet request = new HttpGet("https://kabinet.dreamkas.by/api/receipts"+http);
+        System.out.println(request);
 
-        //request.setHeader("Authorization: Bearer","ebbc0471-b36e-4cce-b3fc-7df8aaa4bfa2");
-        request.addHeader("Authorization","Bearer 528395a1-e544-4611-8f14-a9e8896098ea");
-        System.out.println("REQUEST_LINE: " + request.getRequestLine());
+        //request.addHeader("Authorization","Bearer 528395a1-e544-4611-8f14-a9e8896098ea");
+        request.addHeader("Authorization", client);
 
         try (CloseableHttpResponse response = httpClient.execute(request)) {
 
@@ -64,38 +60,39 @@ public class Kabinet {
     }
 
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ENGLISH);
+
     LocalDate dateTime;
 
     private void parser(String result) throws Exception{
         JSON dat = main.objectMapper.readValue(result, JSON.class);
         //data res = main.objectMapper.readValue(result, data.class);
         for(data check : dat.getData()) {
-            dateTime = dateTime = LocalDate.parse(check.getDate().substring(0, 10), formatter);
+            dateTime = LocalDate.parse(check.getDate().substring(0, 10), formatter);
             for(positions pos : check.getPositions())
-                for(payments pay : check.getPayments())
-            System.out.println("RESULT: " + "\n" + check.getShopId() + "\n" +
-                                            dateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + "\n" +
-                                            check.getDate().substring(11, 19) + "\n" +
-                                            check.getShiftId() + "." +check.getNumber() + "\n" +
-                                            pos.getName() + "\n" +
-                                            pos.getVendorCode() + "\n" +
-                                            pos.getBarcode() + "\n" +
-                                            Double.parseDouble(pos.getQuantity())/1000 + "\n" +
-                                            Double.parseDouble(pay.getAmount())/100 + "\n" +
-                                            Double.parseDouble(pos.getPrice())/100 + "\n" +
-                                            check.getDiscount() + "\n" +
-                                            pay.getType());
+                for(payments pay : check.getPayments()) {
+                    System.out.println("RESULT: " + "\n" + check.getShopId() + "\n" +
+                            dateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + "\n" +
+                            check.getDate().substring(11, 19) + "\n" +
+                            check.getShiftId() + "." + check.getNumber() + "\n" +
+                            pos.getName() + "\n" +
+                            pos.getVendorCode() + "\n" +
+                            pos.getBarcode() + "\n" +
+                            Double.parseDouble(pos.getQuantity()) / 1000 + "\n" +
+                            Double.parseDouble(pay.getAmount()) / 100 + "\n" +
+                            Double.parseDouble(pos.getPrice()) / 100 + "\n" +
+                            check.getDiscount() + "\n" +
+                            pay.getType());
+                }
         }
         writer(dat);
         System.out.println("DIR: " + dir);
     }
 
     String head = "shopcode t-date  t-time  t-id    barname local   barcode salesitem   salesvalue  price   discount    t-type" + "\n";
-    String res;
-    String paym;
-    String pType;
+    String res = "";
+    String paym = "";
+    String pType = "";
     String ptp = "";
-    String disc;
     int vendorKey;
     boolean fileIsEmpty = true;
     final String dir = System.getProperty("user.dir");
